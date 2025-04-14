@@ -1,5 +1,7 @@
 //! Implementation of [`TaskContext`]
 
+use super::task::TaskTraceMap;
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 /// task context structure containing some registers
@@ -30,6 +32,14 @@ impl TaskContext {
             ra: __restore as usize,
             sp: kstack_ptr,
             s: [0; 12],
+        }
+    }
+
+    /// init trace map
+    pub fn trace_init() -> TaskTraceMap {
+        TaskTraceMap {
+            syscall_list: [(64, 0), (93, 1), (124, 2), (169, 3), (410, 4)],
+            trace_num_list: [0,0,0,0,0]
         }
     }
 }

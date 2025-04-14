@@ -54,6 +54,7 @@ lazy_static! {
         let mut tasks = [TaskControlBlock {
             task_cx: TaskContext::zero_init(),
             task_status: TaskStatus::UnInit,
+            task_trace: TaskContext::trace_init()
         }; MAX_APP_NUM];
         for (i, task) in tasks.iter_mut().enumerate() {
             task.task_cx = TaskContext::goto_restore(init_app_cx(i));
@@ -135,6 +136,24 @@ impl TaskManager {
             panic!("All applications completed!");
         }
     }
+
+    /// Add current task trace number.
+    fn add_current_trace_num(&self, id: usize) {
+        let mut inner = self.inner.exclusive_access();
+        let current = inner.current_task;
+        let mut index:usize = 0;
+        inner.tasks[current].task_trace.syscall_list.iter().for_each(|x| if x.0 == id {index = x.1});
+        inner.tasks[current].task_trace.trace_num_list[index] += 1;
+    }
+
+    /// get current task trace number.
+    fn get_current_trace_num(&self, id: usize) -> isize {
+        let inner = self.inner.exclusive_access();
+        let current = inner.current_task;
+        let mut index:usize = 0;
+        inner.tasks[current].task_trace.syscall_list.iter().for_each(|x| if x.0 == id {index = x.1});
+        inner.tasks[current].task_trace.trace_num_list[index]
+    }
 }
 
 /// Run the first task in task list.
@@ -168,4 +187,14 @@ pub fn suspend_current_and_run_next() {
 pub fn exit_current_and_run_next() {
     mark_current_exited();
     run_next_task();
+}
+
+/// add current task trace number.
+pub fn add_current_trace_num(id: usize) {
+    TASK_MANAGER.add_current_trace_num(id);
+}
+
+/// get current task trace number.
+pub fn get_current_trace_num(id: usize) -> isize {
+    TASK_MANAGER.get_current_trace_num(id)
 }
